@@ -1,75 +1,122 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getAuthState } from '../../services/auth';
+import { getClassesByProfessor, getEnrollmentsByStudent } from '../../services/storage';
 
 export default function HomeScreen() {
+  const [user, setUser] = useState(null);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      const authUser = await getAuthState();
+      setUser(authUser);
+      if (authUser) {
+        if (authUser.type === 'professor') {
+          const profClasses = await getClassesByProfessor(authUser.id);
+          setClasses(profClasses);
+        } else {
+          const enrollments = await getEnrollmentsByStudent(authUser.id);
+          setClasses(enrollments);
+        }
+      }
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Usuário não autenticado</Text>
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={styles.container}>
+      <Text style={styles.title}>
+        {user.type === 'professor' ? 'Minhas Turmas' : 'Minhas Matrículas'}
+      </Text>
+      {classes.length === 0 ? (
+        <Text style={styles.emptyText}>Nenhuma turma encontrada.</Text>
+      ) : (
+        <FlatList
+          data={classes}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.classCard}>
+              <Text style={styles.classTitle}>{item.name}</Text>
+              <Text style={styles.classDesc}>{item.description}</Text>
+            </View>
+          )}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      )}
+      {user.type === 'professor' && (
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push('/create-class')}
+        >
+          <Text style={styles.buttonText}>Criar Nova Turma</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  classCard: {
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+  },
+  classTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  classDesc: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 4,
+  },
+  button: {
+    marginTop: 20,
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

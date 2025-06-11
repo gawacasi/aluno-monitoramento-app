@@ -1,29 +1,70 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { darkTheme } from '../config/theme';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+  const theme = darkTheme;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: theme.background,
+        },
+        headerTintColor: theme.text,
+        contentStyle: {
+          backgroundColor: theme.background,
+        },
+      }}
+    >
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Login',
+        }}
+      />
+      <Stack.Screen
+        name="teacher-login"
+        options={{
+          title: 'Login Professor',
+        }}
+      />
+      <Stack.Screen
+        name="student-login"
+        options={{
+          title: 'Login Aluno',
+        }}
+      />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="create-class"
+        options={{
+          title: 'Criar Aula',
+        }}
+      />
+      <Stack.Screen
+        name="edit-class/[id]"
+        options={{
+          title: 'Editar Aula',
+        }}
+      />
+      <Stack.Screen
+        name="enroll-student"
+        options={{
+          title: 'Matricular Alunos',
+        }}
+      />
+      <Stack.Screen
+        name="login"
+        options={{
+          title: 'Login',
+          headerShown: false,
+        }}
+      />
+    </Stack>
   );
 }
