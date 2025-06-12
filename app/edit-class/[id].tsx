@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getAuthState } from '../../services/auth';
-import { getClassById, saveClass } from '../../services/storage';
+import { getClassById, updateClass } from '../../services/storage';
 
 interface ClassData {
   name: string;
   description: string;
-  location: string;
   maxStudents: string;
-  selectedDates: { [key: string]: boolean };
 }
 
 export default function EditClassScreen() {
@@ -18,15 +16,21 @@ export default function EditClassScreen() {
   const [formData, setFormData] = useState<ClassData>({
     name: '',
     description: '',
-    location: '',
     maxStudents: '',
-    selectedDates: {},
   });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    checkAuth();
     loadClass();
   }, [id]);
+
+  const checkAuth = async () => {
+    const user = await getAuthState();
+    setUser(user);
+  };
 
   const loadClass = async () => {
     try {
@@ -38,62 +42,38 @@ export default function EditClassScreen() {
       setFormData({
         name: classData.name,
         description: classData.description,
-        location: classData.location,
         maxStudents: classData.maxStudents.toString(),
-        selectedDates: classData.dates.reduce((acc, date) => ({
-          ...acc,
-          [date]: true,
-        }), {}),
       });
     } catch (error) {
       console.error('Erro ao carregar turma:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados da turma');
       router.back();
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleDateSelect = (date: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedDates: {
-        ...prev.selectedDates,
-        [date]: !prev.selectedDates[date],
-      },
-    }));
   };
 
   const handleSubmit = async () => {
     try {
-      if (!formData.name || !formData.description || !formData.location || !formData.maxStudents) {
+      if (!formData.name || !formData.description || !formData.maxStudents) {
         Alert.alert('Erro', 'Por favor, preencha todos os campos');
         return;
       }
 
-      const selectedDatesArray = Object.entries(formData.selectedDates)
-        .filter(([_, selected]) => selected)
-        .map(([date]) => date);
-
-      if (selectedDatesArray.length === 0) {
-        Alert.alert('Erro', 'Selecione pelo menos uma data para a turma');
-        return;
-      }
-
-      setSaving(true);
-      const { user } = await getAuthState();
-      
       if (!user || user.type !== 'professor') {
         throw new Error('Apenas professores podem editar turmas');
       }
 
-      await saveClass({
-        id: id as string,
+      setSaving(true);
+      const updatedClass = await updateClass(id as string, {
         name: formData.name,
         description: formData.description,
-        location: formData.location,
         maxStudents: parseInt(formData.maxStudents),
-        professorId: user.id,
-        dates: selectedDatesArray,
       });
+
+      if (!updatedClass) {
+        throw new Error('Não foi possível atualizar a turma');
+      }
 
       Alert.alert('Sucesso', 'Turma atualizada com sucesso!', [
         {
@@ -109,11 +89,19 @@ export default function EditClassScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.scrollView}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <FontAwesome name="edit" size={40} color="#007AFF" />
+          <Ionicons name="create" size={40} color="#007AFF" />
           <Text style={styles.title}>Editar Turma</Text>
         </View>
 
@@ -143,17 +131,6 @@ export default function EditClassScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Local</Text>
-            <TextInput
-              placeholder="Digite o local da turma"
-              value={formData.location}
-              onChangeText={(text) => setFormData({ ...formData, location: text })}
-              style={styles.input}
-              editable={!saving}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
             <Text style={styles.label}>Número Máximo de Alunos</Text>
             <TextInput
               placeholder="Digite o número máximo de alunos"
@@ -166,13 +143,15 @@ export default function EditClassScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: '#007AFF' }]}
+            style={styles.button}
             onPress={handleSubmit}
             disabled={saving}
           >
-            <Text style={styles.buttonText}>
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </Text>
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Salvar Alterações</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -207,23 +186,28 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: 'bold',
+    color: '#333',
   },
   input: {
     height: 50,
-    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 15,
     fontSize: 16,
+    backgroundColor: '#fff',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-    paddingTop: 10,
+    paddingTop: 15,
   },
   button: {
-    padding: 15,
+    height: 50,
+    backgroundColor: '#007AFF',
     borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
   },

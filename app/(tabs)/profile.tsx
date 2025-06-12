@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getAuthState, logout } from '../../services/auth';
 import { User, updateUser } from '../../services/storage';
-import { useTheme } from '../../hooks/useTheme';
-import { FontAwesome } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,7 +16,6 @@ export default function ProfileScreen() {
     newPassword: '',
     confirmPassword: '',
   });
-  const theme = useTheme();
 
   useEffect(() => {
     loadUser();
@@ -25,7 +23,7 @@ export default function ProfileScreen() {
 
   const loadUser = async () => {
     try {
-      const { user } = await getAuthState();
+      const user = await getAuthState();
       setUser(user);
       if (user) {
         setFormData(prev => ({
@@ -46,7 +44,7 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       await logout();
-      router.replace('/');
+      router.replace('/(auth)/login');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       Alert.alert('Erro', 'Não foi possível fazer logout');
@@ -113,17 +111,17 @@ export default function ProfileScreen() {
 
   if (loading && !user) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={{ color: theme.text }}>Carregando...</Text>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={{ color: theme.text }}>Usuário não encontrado</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Usuário não encontrado</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.replace('/(auth)/login')}>
           <Text style={styles.buttonText}>Voltar para o login</Text>
         </TouchableOpacity>
       </View>
@@ -131,129 +129,73 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={[styles.avatarContainer, { backgroundColor: theme.card }]}>
-          <FontAwesome name="user-circle" size={100} color={theme.primary} />
+        <View style={styles.avatarContainer}>
+          <Ionicons name="person-circle" size={100} color="#007AFF" />
         </View>
 
         {editing ? (
           <>
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.card,
-                color: theme.text,
-                borderColor: theme.border
-              }]}
+              style={styles.input}
               placeholder="Nome"
-              placeholderTextColor={theme.textSecondary}
               value={formData.name}
               onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
             />
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.card,
-                color: theme.text,
-                borderColor: theme.border
-              }]}
+              style={styles.input}
               placeholder="Email"
-              placeholderTextColor={theme.textSecondary}
               value={formData.email}
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
               keyboardType="email-address"
               autoCapitalize="none"
             />
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.card,
-                color: theme.text,
-                borderColor: theme.border
-              }]}
+              style={styles.input}
               placeholder="Senha atual"
-              placeholderTextColor={theme.textSecondary}
               value={formData.currentPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, currentPassword: text }))}
               secureTextEntry
             />
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.card,
-                color: theme.text,
-                borderColor: theme.border
-              }]}
+              style={styles.input}
               placeholder="Nova senha (opcional)"
-              placeholderTextColor={theme.textSecondary}
               value={formData.newPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, newPassword: text }))}
               secureTextEntry
             />
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.card,
-                color: theme.text,
-                borderColor: theme.border
-              }]}
+              style={styles.input}
               placeholder="Confirmar nova senha"
-              placeholderTextColor={theme.textSecondary}
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
               secureTextEntry
             />
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={handleCancel}
-                disabled={loading}
-              >
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCancel}>
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={handleSave}
-                disabled={loading}
-              >
-                <Text style={styles.buttonText}>
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </Text>
+              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+                <Text style={styles.buttonText}>Salvar</Text>
               </TouchableOpacity>
             </View>
           </>
         ) : (
           <>
-            <Text style={[styles.name, { color: theme.text }]}>{user?.name}</Text>
-            <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
-            <View style={[styles.typeContainer, { backgroundColor: theme.card }]}>
-              <FontAwesome 
-                name={user?.type === 'professor' ? 'chalkboard-teacher' : 'user-graduate'} 
-                size={20} 
-                color={theme.primary} 
-              />
-              <Text style={[styles.type, { color: theme.textSecondary }]}>
-                {user?.type === 'professor' ? 'Professor' : 'Aluno'}
-              </Text>
+            <Text style={styles.name}>{user.name}</Text>
+            <Text style={styles.email}>{user.email}</Text>
+            <Text style={styles.type}>{user.type === 'professor' ? 'Professor' : 'Aluno'}</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
+                <Text style={styles.buttonText}>Editar Perfil</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
+                <Text style={styles.buttonText}>Sair</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.button, styles.editButton]}
-              onPress={handleEdit}
-            >
-              <FontAwesome name="edit" size={16} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>Editar Perfil</Text>
-            </TouchableOpacity>
           </>
         )}
-      </View>
-
-      <View style={styles.content}>
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-          disabled={loading}
-        >
-          <FontAwesome name="sign-out" size={16} color="#fff" style={styles.buttonIcon} />
-          <Text style={styles.buttonText}>
-            {loading ? 'Saindo...' : 'Sair'}
-          </Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -262,11 +204,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#fff',
   },
   header: {
+    padding: 20,
     alignItems: 'center',
-    marginBottom: 30,
   },
   avatarContainer: {
     width: 120,
@@ -279,70 +221,63 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   email: {
     fontSize: 16,
-    marginBottom: 10,
-  },
-  typeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 20,
+    color: '#666',
+    marginBottom: 4,
   },
   type: {
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  content: {
-    flex: 1,
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 20,
   },
   input: {
     width: '100%',
     height: 50,
+    borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-  },
-  button: {
-    flexDirection: 'row',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 10,
+    fontSize: 16,
   },
-  buttonGroup: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    gap: 10,
+    marginTop: 20,
+  },
+  button: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
   editButton: {
     backgroundColor: '#007AFF',
-    width: '100%',
-  },
-  saveButton: {
-    backgroundColor: '#34C759',
-    flex: 1,
-  },
-  cancelButton: {
-    backgroundColor: '#FF3B30',
-    flex: 1,
   },
   logoutButton: {
     backgroundColor: '#FF3B30',
+  },
+  cancelButton: {
+    backgroundColor: '#8E8E93',
+  },
+  saveButton: {
+    backgroundColor: '#34C759',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  buttonIcon: {
-    marginRight: 8,
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 }); 

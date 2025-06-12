@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -10,28 +11,34 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const authUser = await getAuthState();
-      setUser(authUser);
-      if (authUser) {
-        if (authUser.type === 'professor') {
-          const profClasses = await getClassesByProfessor(authUser.id);
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const user = await getAuthState();
+      setUser(user);
+
+      if (user) {
+        if (user.type === 'professor') {
+          const profClasses = await getClassesByProfessor(user.id);
           setClasses(profClasses);
         } else {
-          const enrollments = await getEnrollmentsByStudent(authUser.id);
+          const enrollments = await getEnrollmentsByStudent(user.id);
           setClasses(enrollments);
         }
       }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
       setLoading(false);
-    };
-    loadData();
-  }, []);
+    }
+  };
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
@@ -46,31 +53,57 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        {user.type === 'professor' ? 'Minhas Turmas' : 'Minhas Matrículas'}
-      </Text>
-      {classes.length === 0 ? (
-        <Text style={styles.emptyText}>Nenhuma turma encontrada.</Text>
-      ) : (
-        <FlatList
-          data={classes}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.classCard}>
-              <Text style={styles.classTitle}>{item.name}</Text>
-              <Text style={styles.classDesc}>{item.description}</Text>
-            </View>
-          )}
-        />
-      )}
-      {user.type === 'professor' && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push('/create-class')}
-        >
-          <Text style={styles.buttonText}>Criar Nova Turma</Text>
-        </TouchableOpacity>
-      )}
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Ionicons
+            name={user.type === 'professor' ? 'book' : 'school'}
+            size={40}
+            color="#007AFF"
+          />
+          <Text style={styles.title}>
+            {user.type === 'professor' ? 'Minhas Turmas' : 'Minhas Matrículas'}
+          </Text>
+        </View>
+
+        {classes.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="alert-circle" size={48} color="#666" />
+            <Text style={styles.emptyText}>
+              {user.type === 'professor'
+                ? 'Você ainda não tem turmas.'
+                : 'Você ainda não está matriculado em nenhuma turma.'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={classes}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.classCard}
+                onPress={() => router.push(`/class-details/${item.id}`)}
+              >
+                <View style={styles.classInfo}>
+                  <Text style={styles.classTitle}>{item.name}</Text>
+                  <Text style={styles.classDesc}>{item.description}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#666" />
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={styles.list}
+          />
+        )}
+
+        {user.type === 'professor' && (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push('/create-class')}
+          >
+            <Ionicons name="add-circle" size={24} color="#fff" />
+            <Text style={styles.buttonText}>Criar Nova Turma</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -78,45 +111,71 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+    paddingTop: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginTop: 15,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   emptyText: {
     fontSize: 16,
-    color: '#888',
+    color: '#666',
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 10,
+  },
+  list: {
+    padding: 20,
   },
   classCard: {
-    backgroundColor: '#f2f2f2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    padding: 15,
+    marginBottom: 10,
+  },
+  classInfo: {
+    flex: 1,
   },
   classTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#333',
   },
   classDesc: {
     fontSize: 14,
-    color: '#555',
+    color: '#666',
     marginTop: 4,
   },
   button: {
-    marginTop: 20,
-    backgroundColor: '#007bff',
-    padding: 15,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    height: 50,
+    borderRadius: 8,
+    margin: 20,
+    gap: 10,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 });

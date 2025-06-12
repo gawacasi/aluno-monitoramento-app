@@ -90,17 +90,26 @@ export interface Comment {
 const CLASSES_KEY = config.storage.classes;
 
 // Funções para Usuários
+export const getUsers = async (): Promise<User[]> => {
+  try {
+    const usersStr = await AsyncStorage.getItem(config.storage.users);
+    return usersStr ? JSON.parse(usersStr) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const saveUser = async (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User | null> => {
   try {
-    const users = await getItem<User>(config.storage.users);
+    const users = await getUsers();
     const newUser: User = {
       ...user,
-      id: generateId(),
+      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
       createdAt: new Date(),
       updatedAt: new Date()
     };
     users.push(newUser);
-    await setItem(config.storage.users, users);
+    await AsyncStorage.setItem(config.storage.users, JSON.stringify(users));
     return newUser;
   } catch (error) {
     console.error('Erro ao salvar usuário:', error);
@@ -108,17 +117,13 @@ export const saveUser = async (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'
   }
 };
 
-export const getUsers = async (): Promise<User[]> => {
-  return getItem<User>(config.storage.users);
-};
-
 export const getUserByEmail = async (email: string): Promise<User | null> => {
-  const users = await getItem<User>(config.storage.users);
+  const users = await getUsers();
   return users.find(user => user.email === email) || null;
 };
 
 export const updateUser = async (id: string, data: Partial<User>): Promise<User | null> => {
-  const users = await getItem<User>(config.storage.users);
+  const users = await getUsers();
   const index = users.findIndex(user => user.id === id);
   if (index === -1) return null;
 
@@ -128,23 +133,21 @@ export const updateUser = async (id: string, data: Partial<User>): Promise<User 
     updatedAt: new Date()
   };
 
-  await setItem(config.storage.users, users);
+  await AsyncStorage.setItem(config.storage.users, JSON.stringify(users));
   return users[index];
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
-  const users = await getItem<User>(config.storage.users);
+  const users = await getUsers();
   const filteredUsers = users.filter(user => user.id !== id);
-  return setItem(config.storage.users, filteredUsers);
+  await AsyncStorage.setItem(config.storage.users, JSON.stringify(filteredUsers));
+  return true;
 };
 
 // Funções para Turmas
 export async function saveClass(classData: Omit<Class, 'id' | 'createdAt' | 'updatedAt'>): Promise<Class> {
   try {
-    console.log('Salvando turma:', classData);
     const classes = await getClasses();
-    console.log('Turmas existentes:', classes);
-    
     const newClass: Class = {
       ...classData,
       id: Date.now().toString(),
@@ -152,12 +155,8 @@ export async function saveClass(classData: Omit<Class, 'id' | 'createdAt' | 'upd
       updatedAt: new Date().toISOString(),
     };
     
-    console.log('Nova turma:', newClass);
     classes.push(newClass);
-    
     await AsyncStorage.setItem(CLASSES_KEY, JSON.stringify(classes));
-    console.log('Turma salva com sucesso');
-    
     return newClass;
   } catch (error) {
     console.error('Erro ao salvar turma:', error);
@@ -187,14 +186,8 @@ export async function getClassById(id: string): Promise<Class | null> {
 
 export async function getClassesByProfessor(professorId: string): Promise<Class[]> {
   try {
-    console.log('Buscando turmas do professor:', professorId);
     const classes = await getClasses();
-    console.log('Todas as turmas:', classes);
-    
-    const professorClasses = classes.filter(c => c.professorId === professorId);
-    console.log('Turmas do professor:', professorClasses);
-    
-    return professorClasses;
+    return classes.filter(c => c.professorId === professorId);
   } catch (error) {
     console.error('Erro ao buscar turmas do professor:', error);
     return [];
@@ -205,21 +198,19 @@ export async function updateClass(id: string, classData: Partial<Class>): Promis
   try {
     const classes = await getClasses();
     const index = classes.findIndex(c => c.id === id);
-    
     if (index === -1) return null;
-    
-    const updatedClass = {
+
+    classes[index] = {
       ...classes[index],
       ...classData,
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
-    
-    classes[index] = updatedClass;
+
     await AsyncStorage.setItem(CLASSES_KEY, JSON.stringify(classes));
-    return updatedClass;
+    return classes[index];
   } catch (error) {
     console.error('Erro ao atualizar turma:', error);
-    throw error;
+    return null;
   }
 }
 
@@ -449,4 +440,34 @@ export const deleteComment = async (id: string): Promise<boolean> => {
   const comments = await getItem<Comment>(config.storage.comments);
   const filteredComments = comments.filter(c => c.id !== id);
   return setItem(config.storage.comments, filteredComments);
-}; 
+};
+
+// Usuários mockados para teste
+const mockUsers: User[] = [
+  {
+    id: '1',
+    name: 'Aluno Teste',
+    email: 'aluno@teste.com',
+    password: '123456',
+    type: 'aluno',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: '2',
+    name: 'Professor Teste',
+    email: 'professor@teste.com',
+    password: '123456',
+    type: 'professor',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+// Inicializar usuários mockados
+export async function initializeMockUsers() {
+  const users = await getUsers();
+  if (users.length === 0) {
+    await AsyncStorage.setItem(config.storage.users, JSON.stringify(mockUsers));
+  }
+} 

@@ -1,65 +1,77 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { darkTheme } from '../../config/theme';
-import { useAuth } from '../../hooks/useAuth';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { getAuthState } from '../../services/auth';
 
 export default function TabLayout() {
-  const theme = darkTheme;
-  const { user } = useAuth();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const user = await getAuthState();
+      setUser(user);
+    } catch (error) {
+      console.error('Erro ao verificar autenticação:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: theme.background,
-        },
-        headerTintColor: theme.text,
-        headerTitleStyle: {
-          color: theme.text,
-        },
+        headerShown: false,
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: '#666',
         tabBarStyle: {
-          backgroundColor: theme.background,
+          borderTopWidth: 1,
+          borderTopColor: '#ddd',
+          backgroundColor: '#fff',
         },
-        tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.textSecondary,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarLabel: 'Home',
-        }}
-      />
-      {user?.type === 'aluno' && (
-        <Tabs.Screen
-          name="available-classes"
-          options={{
-            title: 'Aulas Disponíveis',
-            tabBarLabel: 'Aulas',
-          }}
-        />
-      )}
-      <Tabs.Screen
-        name="my-classes"
-        options={{
-          title: 'Minhas Aulas',
-          tabBarLabel: 'Minhas Aulas',
-        }}
-      />
-      <Tabs.Screen
-        name="my-reservations"
-        options={{
-          title: 'Minhas Reservas',
-          tabBarLabel: 'Reservas',
+          title: 'Início',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
       {user?.type === 'professor' && (
         <Tabs.Screen
+          name="my-classes"
+          options={{
+            title: 'Minhas Turmas',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="book" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      {user?.type === 'professor' && (
+        <Tabs.Screen
           name="create-class"
           options={{
-            title: 'Criar Aula',
-            tabBarLabel: 'Criar',
+            title: 'Criar Turma',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="add-circle" size={size} color={color} />
+            ),
           }}
         />
       )}

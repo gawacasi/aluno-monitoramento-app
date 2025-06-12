@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { getAuthState } from '../../services/auth';
 import { saveClass } from '../../services/storage';
 
 export default function CreateClassScreen() {
@@ -10,8 +9,16 @@ export default function CreateClassScreen() {
   const [description, setDescription] = useState('');
   const [maxStudents, setMaxStudents] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  const theme = useTheme();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const user = await getAuthState();
+    setUser(user);
+  };
 
   const handleCreate = async () => {
     if (!name || !description || !maxStudents) {
@@ -48,30 +55,28 @@ export default function CreateClassScreen() {
     }
   };
 
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>Criar Nova Turma</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Criar Nova Turma</Text>
 
       <TextInput
-        style={[styles.input, { 
-          backgroundColor: theme.card,
-          color: theme.text,
-          borderColor: theme.border
-        }]}
+        style={styles.input}
         placeholder="Nome da Turma"
-        placeholderTextColor={theme.textSecondary}
         value={name}
         onChangeText={setName}
       />
 
       <TextInput
-        style={[styles.input, { 
-          backgroundColor: theme.card,
-          color: theme.text,
-          borderColor: theme.border
-        }]}
+        style={[styles.input, styles.textArea]}
         placeholder="Descrição"
-        placeholderTextColor={theme.textSecondary}
         value={description}
         onChangeText={setDescription}
         multiline
@@ -79,26 +84,23 @@ export default function CreateClassScreen() {
       />
 
       <TextInput
-        style={[styles.input, { 
-          backgroundColor: theme.card,
-          color: theme.text,
-          borderColor: theme.border
-        }]}
+        style={styles.input}
         placeholder="Número máximo de alunos"
-        placeholderTextColor={theme.textSecondary}
         value={maxStudents}
         onChangeText={setMaxStudents}
         keyboardType="numeric"
       />
 
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.primary }]}
+        style={styles.button}
         onPress={handleCreate}
         disabled={loading}
       >
-        <Text style={[styles.buttonText, { color: theme.background }]}>
-          {loading ? 'Criando...' : 'Criar Turma'}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Criar Turma</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 24,
@@ -120,6 +123,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 15,
     borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+    paddingTop: 15,
   },
   button: {
     height: 50,
@@ -127,9 +137,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
+    backgroundColor: '#007AFF',
   },
   buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#fff',
   },
 }); 
