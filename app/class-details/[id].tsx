@@ -1,90 +1,45 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getAuthState } from '../../services/auth';
-import { deleteClass, getClassById } from '../../services/storage';
+import { getClassById } from '../../services/storage';
+import { Class } from '../../types/class';
 
 export default function ClassDetailsScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [classData, setClassData] = useState(null);
-  const [user, setUser] = useState(null);
+  const [classData, setClassData] = useState<Class | null>(null);
+  const [userType, setUserType] = useState<'professor' | 'aluno' | null>(null);
 
   useEffect(() => {
-    checkAuth();
-    loadClass();
+    loadData();
   }, [id]);
 
-  const checkAuth = async () => {
+  const loadData = async () => {
     try {
+      setLoading(true);
       const user = await getAuthState();
-      setUser(user);
-    } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-      Alert.alert('Erro', 'Não foi possível verificar sua autenticação');
-      router.replace('/login');
-    }
-  };
+      setUserType(user?.type || null);
 
-  const loadClass = async () => {
-    try {
-      const data = await getClassById(id as string);
-      if (!data) {
+      if (!id) {
+        throw new Error('ID da turma não fornecido');
+      }
+
+      const classInfo = await getClassById(id as string);
+      if (!classInfo) {
         throw new Error('Turma não encontrada');
       }
-      setClassData(data);
+
+      setClassData(classInfo);
     } catch (error) {
-      console.error('Erro ao carregar turma:', error);
+      console.error('Erro ao carregar dados da turma:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados da turma');
       router.back();
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDelete = async () => {
-    Alert.alert(
-      'Confirmar exclusão',
-      'Tem certeza que deseja excluir esta turma? Esta ação não pode ser desfeita.',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (!user || user.type !== 'professor') {
-                throw new Error('Apenas professores podem excluir turmas');
-              }
-
-              setDeleting(true);
-              const success = await deleteClass(id as string);
-
-              if (!success) {
-                throw new Error('Não foi possível excluir a turma');
-              }
-
-              Alert.alert('Sucesso', 'Turma excluída com sucesso!', [
-                {
-                  text: 'OK',
-                  onPress: () => router.back(),
-                },
-              ]);
-            } catch (error) {
-              console.error('Erro ao excluir turma:', error);
-              Alert.alert('Erro', 'Não foi possível excluir a turma');
-            } finally {
-              setDeleting(false);
-            }
-          },
-        },
-      ]
-    );
   };
 
   if (loading) {
@@ -96,145 +51,162 @@ export default function ClassDetailsScreen() {
   }
 
   if (!classData) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Turma não encontrada</Text>
+      </View>
+    );
   }
 
-  const isProfessor = user?.type === 'professor';
-
   return (
-    <ScrollView style={styles.scrollView}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Ionicons name="book" size={40} color="#007AFF" />
-          <Text style={styles.title}>{classData.name}</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Descrição</Text>
-          <Text style={styles.description}>{classData.description}</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informações</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="people" size={20} color="#666" />
-            <Text style={styles.infoText}>
-              {classData.enrollments.length} alunos matriculados
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="person" size={20} color="#666" />
-            <Text style={styles.infoText}>
-              Professor: {classData.professor.name}
-            </Text>
-          </View>
-        </View>
-
-        {isProfessor && (
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.button, styles.editButton]}
-              onPress={() => router.push(`/edit-class/${id}`)}
-            >
-              <Ionicons name="create" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Editar Turma</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.enrollButton]}
-              onPress={() => router.push(`/enroll-students/${id}`)}
-            >
-              <Ionicons name="people" size={20} color="#fff" />
-              <Text style={styles.buttonText}>Matricular Alunos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.deleteButton]}
-              onPress={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="trash" size={20} color="#fff" />
-                  <Text style={styles.buttonText}>Excluir Turma</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{classData.name}</Text>
+        <Text style={styles.subtitle}>{classData.subject}</Text>
       </View>
+
+      <View style={styles.infoContainer}>
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar" size={20} color="#666" />
+          <Text style={styles.infoText}>
+            {new Date(classData.startDate).toLocaleDateString()} - {new Date(classData.endDate).toLocaleDateString()}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="time" size={20} color="#666" />
+          <Text style={styles.infoText}>
+            {classData.schedule.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ')}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="people" size={20} color="#666" />
+          <Text style={styles.infoText}>
+            {classData.enrollments?.length || 0} alunos matriculados
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="location" size={20} color="#666" />
+          <Text style={styles.infoText}>{classData.location}</Text>
+        </View>
+      </View>
+
+      <View style={styles.descriptionContainer}>
+        <Text style={styles.descriptionTitle}>Descrição</Text>
+        <Text style={styles.descriptionText}>{classData.description}</Text>
+      </View>
+
+      {userType === 'professor' && (
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/enroll-students/${id}`)}
+          >
+            <Ionicons name="person-add" size={24} color="#fff" />
+            <Text style={styles.actionButtonText}>Matricular Alunos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/attendance/${id}`)}
+          >
+            <Ionicons name="calendar" size={24} color="#fff" />
+            <Text style={styles.actionButtonText}>Chamada</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/grades/${id}`)}
+          >
+            <Ionicons name="school" size={24} color="#fff" />
+            <Text style={styles.actionButtonText}>Notas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push(`/comments/${id}`)}
+          >
+            <Ionicons name="chatbubble" size={24} color="#fff" />
+            <Text style={styles.actionButtonText}>Comentários</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20,
   },
   header: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 30,
+    padding: 20,
+    backgroundColor: '#007AFF',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 15,
+    color: '#fff',
+    marginBottom: 5,
   },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  description: {
+  subtitle: {
     fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
+    color: '#fff',
+    opacity: 0.8,
+  },
+  infoContainer: {
+    padding: 20,
+    backgroundColor: '#f8f9fa',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  descriptionContainer: {
+    padding: 20,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  descriptionText: {
     fontSize: 16,
     color: '#666',
-    marginLeft: 10,
+    lineHeight: 24,
   },
-  actions: {
-    gap: 10,
+  actionsContainer: {
+    padding: 20,
+    gap: 15,
   },
-  button: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderRadius: 8,
-    gap: 10,
-  },
-  editButton: {
     backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
+    justifyContent: 'center',
   },
-  enrollButton: {
-    backgroundColor: '#34C759',
-  },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
-  },
-  buttonText: {
+  actionButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
   },
 }); 

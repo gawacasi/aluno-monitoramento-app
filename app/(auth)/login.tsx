@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -9,20 +10,48 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-    initializeMockUsers();
+    setup();
   }, []);
 
-  const checkAuth = async () => {
+  const setup = async () => {
     try {
+      setInitializing(true);
+      console.log('Iniciando setup...');
+
+      // Limpar o AsyncStorage
+      await AsyncStorage.clear();
+      console.log('AsyncStorage limpo com sucesso');
+
+      // Inicializar usuários de teste
+      const users = await initializeMockUsers();
+      console.log('Usuários de teste inicializados:', users);
+
+      if (!users || users.length === 0) {
+        throw new Error('Falha ao inicializar usuários de teste');
+      }
+
+      // Verificar autenticação
       const user = await getAuthState();
       if (user) {
         router.replace('/(tabs)');
       }
     } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
+      console.error('Erro durante a configuração:', error);
+      Alert.alert(
+        'Erro',
+        'Erro ao inicializar o aplicativo. Por favor, recarregue a página.',
+        [
+          {
+            text: 'Recarregar',
+            onPress: () => setup()
+          }
+        ]
+      );
+    } finally {
+      setInitializing(false);
     }
   };
 
@@ -46,13 +75,32 @@ export default function LoginScreen() {
       }
 
       router.replace('/(tabs)');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao fazer login:', error);
-      Alert.alert('Erro', 'Não foi possível fazer login');
+      
+      // Mostrar mensagem de erro específica
+      if (error.message === 'Email não encontrado') {
+        Alert.alert('Erro', 'Email não encontrado. Por favor, verifique o email digitado.');
+      } else if (error.message === 'Senha incorreta') {
+        Alert.alert('Erro', 'Senha incorreta. Por favor, verifique a senha digitada.');
+      } else {
+        Alert.alert('Erro', 'Não foi possível fazer login. Por favor, tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  if (initializing) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Inicializando...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -124,6 +172,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     paddingTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     alignItems: 'center',
@@ -136,6 +186,7 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 20,
+    width: '100%',
   },
   inputGroup: {
     gap: 8,
@@ -171,5 +222,10 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#007AFF',
     fontSize: 16,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 }); 

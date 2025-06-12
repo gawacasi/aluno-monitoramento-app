@@ -1,5 +1,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { config } from '../config/config';
+import { User } from '../types/user';
+
+const STORAGE_KEYS = {
+  USERS: '@users',
+  SESSION: '@session',
+};
+
+// Usuários fixos do sistema
+export const FIXED_USERS: User[] = [
+  {
+    id: '1',
+    name: 'Professor Teste',
+    email: 'professor@teste.com',
+    password: '123456',
+    type: 'professor',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'Aluno Teste',
+    email: 'aluno@teste.com',
+    password: '123456',
+    type: 'aluno',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
 // Função para gerar ID único
 const generateId = (): string => {
@@ -89,31 +117,62 @@ export interface Comment {
 
 const CLASSES_KEY = config.storage.classes;
 
-// Funções para Usuários
-export const getUsers = async (): Promise<User[]> => {
+export const initializeMockUsers = async (): Promise<User[]> => {
   try {
-    const usersStr = await AsyncStorage.getItem(config.storage.users);
-    return usersStr ? JSON.parse(usersStr) : [];
-  } catch {
-    return [];
+    console.log('Iniciando configuração dos usuários fixos...');
+
+    // Salvar usuários fixos no AsyncStorage
+    await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(FIXED_USERS));
+    console.log('Usuários fixos salvos no AsyncStorage');
+
+    // Verificar se os usuários foram salvos corretamente
+    const savedUsersJson = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
+    console.log('Dados salvos no AsyncStorage:', savedUsersJson);
+
+    if (!savedUsersJson) {
+      throw new Error('Falha ao salvar usuários no AsyncStorage');
+    }
+
+    const savedUsers = JSON.parse(savedUsersJson);
+    console.log('Usuários recuperados do AsyncStorage:', JSON.stringify(savedUsers, null, 2));
+
+    return savedUsers;
+  } catch (error) {
+    console.error('Erro ao configurar usuários fixos:', error);
+    throw error;
   }
 };
 
-export const saveUser = async (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User | null> => {
+export const getUsers = async (): Promise<User[]> => {
+  try {
+    const usersJson = await AsyncStorage.getItem(STORAGE_KEYS.USERS);
+    if (!usersJson) {
+      // Se não houver usuários, inicializa com os usuários fixos
+      return await initializeMockUsers();
+    }
+    return JSON.parse(usersJson);
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    // Em caso de erro, retorna os usuários fixos
+    return FIXED_USERS;
+  }
+};
+
+export const saveUser = async (user: User): Promise<void> => {
   try {
     const users = await getUsers();
-    const newUser: User = {
-      ...user,
-      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    users.push(newUser);
-    await AsyncStorage.setItem(config.storage.users, JSON.stringify(users));
-    return newUser;
+    const existingUserIndex = users.findIndex(u => u.id === user.id);
+
+    if (existingUserIndex >= 0) {
+      users[existingUserIndex] = user;
+    } else {
+      users.push(user);
+    }
+
+    await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   } catch (error) {
     console.error('Erro ao salvar usuário:', error);
-    return null;
+    throw error;
   }
 };
 
@@ -133,14 +192,14 @@ export const updateUser = async (id: string, data: Partial<User>): Promise<User 
     updatedAt: new Date()
   };
 
-  await AsyncStorage.setItem(config.storage.users, JSON.stringify(users));
+  await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   return users[index];
 };
 
 export const deleteUser = async (id: string): Promise<boolean> => {
   const users = await getUsers();
   const filteredUsers = users.filter(user => user.id !== id);
-  await AsyncStorage.setItem(config.storage.users, JSON.stringify(filteredUsers));
+  await AsyncStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(filteredUsers));
   return true;
 };
 
@@ -440,59 +499,4 @@ export const deleteComment = async (id: string): Promise<boolean> => {
   const comments = await getItem<Comment>(config.storage.comments);
   const filteredComments = comments.filter(c => c.id !== id);
   return setItem(config.storage.comments, filteredComments);
-};
-
-// Usuários mockados para teste
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Aluno Teste',
-    email: 'aluno@teste.com',
-    password: '123456',
-    type: 'aluno',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: '2',
-    name: 'Professor Teste',
-    email: 'professor@teste.com',
-    password: '123456',
-    type: 'professor',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
-
-// Inicializar usuários mockados
-export async function initializeMockUsers() {
-  try {
-    const users = await getUsers();
-    
-    // Se já existirem usuários, não inicializa
-    if (users.length > 0) return;
-
-    const mockUsers = [
-      {
-        name: 'Professor Teste',
-        email: 'professor@teste.com',
-        password: '123456',
-        type: 'professor' as const,
-      },
-      {
-        name: 'Aluno Teste',
-        email: 'aluno@teste.com',
-        password: '123456',
-        type: 'aluno' as const,
-      }
-    ];
-
-    for (const user of mockUsers) {
-      await saveUser(user);
-    }
-
-    console.log('Usuários de teste inicializados com sucesso');
-  } catch (error) {
-    console.error('Erro ao inicializar usuários de teste:', error);
-  }
-} 
+}; 
