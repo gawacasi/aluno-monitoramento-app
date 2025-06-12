@@ -32,7 +32,18 @@ export default function ClassDetailsScreen() {
         throw new Error('Turma não encontrada');
       }
 
-      setClassData(classInfo);
+      // Garantir que todos os campos obrigatórios existam
+      const completeClassInfo: Class = {
+        ...classInfo,
+        schedule: classInfo.schedule || [],
+        enrollments: classInfo.enrollments || [],
+        startDate: classInfo.startDate || new Date().toISOString(),
+        endDate: classInfo.endDate || new Date().toISOString(),
+        location: classInfo.location || 'Local não definido',
+        description: classInfo.description || 'Sem descrição',
+      };
+
+      setClassData(completeClassInfo);
     } catch (error) {
       console.error('Erro ao carregar dados da turma:', error);
       Alert.alert('Erro', 'Não foi possível carregar os dados da turma');
@@ -76,7 +87,9 @@ export default function ClassDetailsScreen() {
         <View style={styles.infoRow}>
           <Ionicons name="time" size={20} color="#666" />
           <Text style={styles.infoText}>
-            {classData.schedule.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ')}
+            {classData.schedule && classData.schedule.length > 0
+              ? classData.schedule.map(s => `${s.day} ${s.startTime}-${s.endTime}`).join(', ')
+              : 'Horário não definido'}
           </Text>
         </View>
 
