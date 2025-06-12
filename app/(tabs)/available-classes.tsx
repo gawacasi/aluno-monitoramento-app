@@ -1,12 +1,16 @@
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { darkTheme, lightTheme } from '../../constants/Colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getAuthState } from '../../services/auth';
 import { getClasses, saveEnrollment } from '../../services/storage';
 
 export default function AvailableClassesScreen() {
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isDark } = useTheme();
+  const colors = isDark ? darkTheme : lightTheme;
 
   useEffect(() => {
     loadClasses();
@@ -47,28 +51,28 @@ export default function AvailableClassesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Carregando...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>Carregando...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Turmas Disponíveis</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Turmas Disponíveis</Text>
 
       {classes.length === 0 ? (
-        <Text style={styles.emptyText}>Nenhuma turma disponível</Text>
+        <Text style={[styles.emptyText, { color: colors.text + '80' }]}>Nenhuma turma disponível</Text>
       ) : (
         <FlatList
           data={classes}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.classCard}>
-              <Text style={styles.className}>{item.name}</Text>
-              <Text style={styles.classDescription}>{item.description}</Text>
+            <View style={[styles.classCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.className, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.classDescription, { color: colors.text + '80' }]}>{item.description}</Text>
               <TouchableOpacity
-                style={styles.enrollButton}
+                style={[styles.enrollButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleEnroll(item.id)}
               >
                 <Text style={styles.enrollButtonText}>Matricular</Text>
@@ -84,7 +88,6 @@ export default function AvailableClassesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
   title: {
@@ -94,12 +97,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginTop: 20,
   },
   classCard: {
-    backgroundColor: '#f5f5f5',
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
@@ -111,11 +112,9 @@ const styles = StyleSheet.create({
   },
   classDescription: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 10,
   },
   enrollButton: {
-    backgroundColor: '#007AFF',
     padding: 10,
     borderRadius: 8,
     alignItems: 'center',

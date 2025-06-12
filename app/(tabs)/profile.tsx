@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { darkTheme, lightTheme } from '../../constants/Colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getAuthState, logout } from '../../services/auth';
 import { User, updateUser } from '../../services/storage';
 
@@ -9,6 +11,8 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const { isDark } = useTheme();
+  const colors = isDark ? darkTheme : lightTheme;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -111,17 +115,17 @@ export default function ProfileScreen() {
 
   if (loading && !user) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Usuário não encontrado</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/(auth)/login')}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Usuário não encontrado</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={() => router.replace('/(auth)/login')}>
           <Text style={styles.buttonText}>Voltar para o login</Text>
         </TouchableOpacity>
       </View>
@@ -129,45 +133,70 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          <Ionicons name="person-circle" size={100} color="#007AFF" />
+          <Ionicons name="person-circle" size={100} color={colors.primary} />
         </View>
 
         {editing ? (
           <>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
               placeholder="Nome"
+              placeholderTextColor={colors.text + '80'}
               value={formData.name}
               onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
               placeholder="Email"
+              placeholderTextColor={colors.text + '80'}
               value={formData.email}
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
               keyboardType="email-address"
               autoCapitalize="none"
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
               placeholder="Senha atual"
+              placeholderTextColor={colors.text + '80'}
               value={formData.currentPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, currentPassword: text }))}
               secureTextEntry
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
               placeholder="Nova senha (opcional)"
+              placeholderTextColor={colors.text + '80'}
               value={formData.newPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, newPassword: text }))}
               secureTextEntry
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
               placeholder="Confirmar nova senha"
+              placeholderTextColor={colors.text + '80'}
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
               secureTextEntry
@@ -183,9 +212,9 @@ export default function ProfileScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.email}>{user.email}</Text>
-            <Text style={styles.type}>{user.type === 'professor' ? 'Professor' : 'Aluno'}</Text>
+            <Text style={[styles.name, { color: colors.text }]}>{user.name}</Text>
+            <Text style={[styles.email, { color: colors.text + '80' }]}>{user.email}</Text>
+            <Text style={[styles.type, { color: colors.text + '60' }]}>{user.type === 'professor' ? 'Professor' : 'Aluno'}</Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
                 <Text style={styles.buttonText}>Editar Perfil</Text>
@@ -204,7 +233,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     padding: 20,
@@ -225,19 +253,16 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 4,
   },
   type: {
     fontSize: 14,
-    color: '#888',
     marginBottom: 20,
   },
   input: {
     width: '100%',
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 10,
@@ -257,6 +282,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
   },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   editButton: {
     backgroundColor: '#007AFF',
   },
@@ -268,11 +298,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#34C759',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   title: {
     fontSize: 20,

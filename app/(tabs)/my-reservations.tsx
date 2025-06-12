@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { darkTheme, lightTheme } from '../../constants/Colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getAuthState } from '../../services/auth';
 import { deleteEnrollment, getEnrollmentsByStudent } from '../../services/storage';
 
@@ -15,6 +17,8 @@ interface Enrollment {
 export default function MyReservationsScreen() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isDark } = useTheme();
+  const colors = isDark ? darkTheme : lightTheme;
 
   useEffect(() => {
     loadEnrollments();
@@ -51,11 +55,11 @@ export default function MyReservationsScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return '#4CAF50';
+        return colors.success;
       case 'rejected':
-        return '#F44336';
+        return colors.error;
       default:
-        return '#FFC107';
+        return colors.warning;
     }
   };
 
@@ -72,26 +76,26 @@ export default function MyReservationsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Carregando...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>Carregando...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Minhas Matrículas</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Minhas Matrículas</Text>
 
       {enrollments.length === 0 ? (
-        <Text style={styles.emptyText}>Você ainda não tem matrículas</Text>
+        <Text style={[styles.emptyText, { color: colors.text + '80' }]}>Você ainda não tem matrículas</Text>
       ) : (
         <FlatList
           data={enrollments}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.cardHeader}>
-                <Text style={styles.className}>{item.className}</Text>
+                <Text style={[styles.className, { color: colors.text }]}>{item.className}</Text>
                 <Text
                   style={[
                     styles.status,
@@ -102,13 +106,13 @@ export default function MyReservationsScreen() {
                 </Text>
               </View>
 
-              <Text style={styles.professorName}>
+              <Text style={[styles.professorName, { color: colors.text + '80' }]}>
                 Professor: {item.professorName}
               </Text>
 
               {item.status === 'pending' && (
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: colors.error }]}
                   onPress={() => handleCancel(item.id)}
                 >
                   <Text style={styles.cancelButtonText}>Cancelar Matrícula</Text>
@@ -125,7 +129,6 @@ export default function MyReservationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
   title: {
@@ -136,11 +139,9 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
     marginTop: 20,
   },
   card: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 15,
     marginBottom: 15,
@@ -161,10 +162,8 @@ const styles = StyleSheet.create({
   },
   professorName: {
     fontSize: 14,
-    color: '#666',
   },
   cancelButton: {
-    backgroundColor: '#F44336',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,

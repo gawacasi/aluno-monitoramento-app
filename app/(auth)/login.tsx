@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getAuthState, login } from '../../services/auth';
-import { initializeMockUsers } from '../../services/storage';
+import { getUserByEmail, initializeMockUsers, saveAuthState } from '../../services/storage';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -21,10 +20,6 @@ export default function LoginScreen() {
       setInitializing(true);
       console.log('Iniciando setup...');
 
-      // Limpar o AsyncStorage
-      await AsyncStorage.clear();
-      console.log('AsyncStorage limpo com sucesso');
-
       // Inicializar usuários de teste
       const users = await initializeMockUsers();
       console.log('Usuários de teste inicializados:', users);
@@ -34,8 +29,8 @@ export default function LoginScreen() {
       }
 
       // Verificar autenticação
-      const user = await getAuthState();
-      if (user) {
+      const session = await AsyncStorage.getItem('@session');
+      if (session) {
         router.replace('/(tabs)');
       }
     } catch (error) {
@@ -68,12 +63,18 @@ export default function LoginScreen() {
       }
 
       setLoading(true);
-      const user = await login(email, password);
+      const user = await getUserByEmail(email);
 
       if (!user) {
-        throw new Error('Credenciais inválidas');
+        throw new Error('Email não encontrado');
       }
 
+      if (user.password !== password) {
+        throw new Error('Senha incorreta');
+      }
+
+      // Salvar estado de autenticação
+      await saveAuthState(user);
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);

@@ -2,11 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { darkTheme, lightTheme } from '../../constants/Colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getAuthState } from '../../services/auth';
 
 export default function TabLayout() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { isDark } = useTheme();
+  const colors = isDark ? darkTheme : lightTheme;
 
   useEffect(() => {
     checkAuth();
@@ -25,8 +29,8 @@ export default function TabLayout() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -35,12 +39,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.text + '80',
         tabBarStyle: {
           borderTopWidth: 1,
-          borderTopColor: '#ddd',
-          backgroundColor: '#fff',
+          borderTopColor: colors.border,
+          backgroundColor: colors.background,
         },
       }}
     >

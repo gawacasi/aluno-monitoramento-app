@@ -1,31 +1,46 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getAuthState } from '../../services/auth';
-import { getClassesByProfessor, getEnrollmentsByStudent } from '../../services/storage';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Calendar from '../../components/Calendar';
+import { darkTheme, lightTheme } from '../../constants/Colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getAuthState, getClassesByProfessor, getEnrollmentsByStudent, sampleClasses } from '../../services/storage';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'professor' | 'aluno';
+}
+
+interface Class {
+  id: string;
+  name: string;
+  description: string;
+  schedule: string;
+}
 
 export default function HomeScreen() {
-  const [user, setUser] = useState(null);
-  const [classes, setClasses] = useState([]);
+  const { isDark } = useTheme();
+  const colors = isDark ? darkTheme : lightTheme;
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState<Class[]>([]);
 
   useEffect(() => {
-    checkAuth();
+    loadUserData();
   }, []);
 
-  const checkAuth = async () => {
+  const loadUserData = async () => {
     try {
-      const user = await getAuthState();
-      setUser(user);
-
-      if (user) {
-        if (user.type === 'professor') {
-          const profClasses = await getClassesByProfessor(user.id);
-          setClasses(profClasses);
+      const authState = await getAuthState();
+      if (authState?.user) {
+        setUser(authState.user);
+        if (authState.user.role === 'professor') {
+          const professorClasses = await getClassesByProfessor(authState.user.id);
+          setClasses(professorClasses);
         } else {
-          const enrollments = await getEnrollmentsByStudent(user.id);
-          setClasses(enrollments);
+          const studentEnrollments = await getEnrollmentsByStudent(authState.user.id);
+          setClasses(studentEnrollments);
         }
       }
     } catch (error) {
@@ -37,73 +52,78 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Usuário não autenticado</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.message, { color: colors.text }]}>
+          Faça login para ver suas atividades
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Ionicons
-            name={user.type === 'professor' ? 'book' : 'school'}
-            size={40}
-            color="#007AFF"
-          />
-          <Text style={styles.title}>
-            {user.type === 'professor' ? 'Minhas Turmas' : 'Minhas Matrículas'}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={styles.scrollView}>
+        {/* Seção do Calendário */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Calendário de Atividades
           </Text>
+          <Calendar classes={sampleClasses} />
         </View>
 
-        {classes.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="alert-circle" size={48} color="#666" />
-            <Text style={styles.emptyText}>
-              {user.type === 'professor'
-                ? 'Você ainda não tem turmas.'
-                : 'Você ainda não está matriculado em nenhuma turma.'}
+        {/* Seção de Turmas */}
+        {user.role === 'professor' && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Minhas Turmas
             </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={classes}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.classCard}
-                onPress={() => router.push(`/class-details/${item.id}`)}
-              >
-                <View style={styles.classInfo}>
-                  <Text style={styles.classTitle}>{item.name}</Text>
-                  <Text style={styles.classDesc}>{item.description}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
-              </TouchableOpacity>
+            {classes.length > 0 ? (
+              <FlatList
+                data={classes}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.classCard, { backgroundColor: colors.card }]}
+                    onPress={() => {
+                      // Navegar para detalhes da turma
+                    }}
+                  >
+                    <Text style={[styles.className, { color: colors.text }]}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.classDescription, { color: colors.textSecondary }]}>
+                      {item.description}
+                    </Text>
+                    <Text style={[styles.classSchedule, { color: colors.textSecondary }]}>
+                      {item.schedule}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
+                Você ainda não tem turmas cadastradas
+              </Text>
             )}
-            contentContainerStyle={styles.list}
-          />
+            <TouchableOpacity
+              style={[styles.createButton, { backgroundColor: colors.primary }]}
+              onPress={() => {
+                // Navegar para tela de criar turma
+              }}
+            >
+              <Text style={styles.createButtonText}>Criar Nova Turma</Text>
+            </TouchableOpacity>
+          </View>
         )}
-
-        {user.type === 'professor' && (
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('/create-class')}
-          >
-            <Ionicons name="add-circle" size={24} color="#fff" />
-            <Text style={styles.buttonText}>Criar Nova Turma</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -111,71 +131,55 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingTop: 20,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 30,
-    paddingHorizontal: 20,
+  section: {
+    padding: 16,
   },
-  title: {
-    fontSize: 24,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 15,
+    marginBottom: 16,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
+  message: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
-    marginTop: 10,
-  },
-  list: {
-    padding: 20,
+    marginTop: 20,
   },
   classCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    padding: 16,
     borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  classInfo: {
-    flex: 1,
-  },
-  classTitle: {
+  className: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 4,
   },
-  classDesc: {
+  classDescription: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    marginBottom: 4,
   },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    height: 50,
+  classSchedule: {
+    fontSize: 12,
+  },
+  emptyMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  createButton: {
+    padding: 16,
     borderRadius: 8,
-    margin: 20,
-    gap: 10,
+    alignItems: 'center',
+    marginTop: 16,
   },
-  buttonText: {
-    color: '#fff',
+  createButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
 });
+

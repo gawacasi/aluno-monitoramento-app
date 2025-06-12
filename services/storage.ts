@@ -117,6 +117,218 @@ export interface Comment {
 
 const CLASSES_KEY = config.storage.classes;
 
+// Dados de exemplo para classes
+export const sampleClasses = [
+  // Segunda-feira
+  {
+    id: '1',
+    name: 'Residência em Clínica Médica',
+    description: 'R1 - Clínica Médica',
+    professorId: '1',
+    professorName: 'Dr. Silva',
+    schedule: 'Segunda-feira, 8:00',
+    day: 1,
+    time: '8:00',
+    color: '#4285F4'
+  },
+  {
+    id: '2',
+    name: 'Plantão Clínico',
+    description: 'Plantão Clínico',
+    professorId: '1',
+    professorName: 'Dr. Silva',
+    schedule: 'Segunda-feira, 19:00',
+    day: 1,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // Terça-feira
+  {
+    id: '3',
+    name: 'Residência em Pediatria',
+    description: 'R1 - Pediatria',
+    professorId: '2',
+    professorName: 'Dra. Santos',
+    schedule: 'Terça-feira, 8:00',
+    day: 2,
+    time: '8:00',
+    color: '#0F9D58'
+  },
+  {
+    id: '4',
+    name: 'Plantão Pediátrico',
+    description: 'Plantão Pediátrico',
+    professorId: '2',
+    professorName: 'Dra. Santos',
+    schedule: 'Terça-feira, 19:00',
+    day: 2,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // Quarta-feira
+  {
+    id: '5',
+    name: 'Residência em Cirurgia Geral',
+    description: 'R1 - Cirurgia Geral',
+    professorId: '3',
+    professorName: 'Dr. Oliveira',
+    schedule: 'Quarta-feira, 8:00',
+    day: 3,
+    time: '8:00',
+    color: '#DB4437'
+  },
+  {
+    id: '6',
+    name: 'Plantão Cirúrgico',
+    description: 'Plantão Cirúrgico',
+    professorId: '3',
+    professorName: 'Dr. Oliveira',
+    schedule: 'Quarta-feira, 19:00',
+    day: 3,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // Quinta-feira
+  {
+    id: '7',
+    name: 'Residência em Ginecologia e Obstetrícia',
+    description: 'R1 - GO',
+    professorId: '4',
+    professorName: 'Dra. Costa',
+    schedule: 'Quinta-feira, 8:00',
+    day: 4,
+    time: '8:00',
+    color: '#F4B400'
+  },
+  {
+    id: '8',
+    name: 'Plantão Obstétrico',
+    description: 'Plantão Obstétrico',
+    professorId: '4',
+    professorName: 'Dra. Costa',
+    schedule: 'Quinta-feira, 19:00',
+    day: 4,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // Sexta-feira
+  {
+    id: '9',
+    name: 'Residência em Psiquiatria',
+    description: 'R1 - Psiquiatria',
+    professorId: '5',
+    professorName: 'Dr. Lima',
+    schedule: 'Sexta-feira, 8:00',
+    day: 5,
+    time: '8:00',
+    color: '#673AB7'
+  },
+  {
+    id: '10',
+    name: 'Plantão Psiquiátrico',
+    description: 'Plantão Psiquiátrico',
+    professorId: '5',
+    professorName: 'Dr. Lima',
+    schedule: 'Sexta-feira, 19:00',
+    day: 5,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // Sábado
+  {
+    id: '11',
+    name: 'Plantão Geral',
+    description: 'Plantão Geral',
+    professorId: '1',
+    professorName: 'Dr. Silva',
+    schedule: 'Sábado, 8:00',
+    day: 6,
+    time: '8:00',
+    color: '#FF0000'
+  },
+  {
+    id: '12',
+    name: 'Plantão Noturno',
+    description: 'Plantão Noturno',
+    professorId: '2',
+    professorName: 'Dra. Santos',
+    schedule: 'Sábado, 19:00',
+    day: 6,
+    time: '19:00',
+    color: '#FF0000'
+  },
+
+  // R2 - Segunda-feira
+  {
+    id: '13',
+    name: 'Residência em Clínica Médica',
+    description: 'R2 - Clínica Médica',
+    professorId: '1',
+    professorName: 'Dr. Silva',
+    schedule: 'Segunda-feira, 14:00',
+    day: 1,
+    time: '14:00',
+    color: '#4285F4'
+  },
+
+  // R2 - Terça-feira
+  {
+    id: '14',
+    name: 'Residência em Pediatria',
+    description: 'R2 - Pediatria',
+    professorId: '2',
+    professorName: 'Dra. Santos',
+    schedule: 'Terça-feira, 14:00',
+    day: 2,
+    time: '14:00',
+    color: '#0F9D58'
+  },
+
+  // R2 - Quarta-feira
+  {
+    id: '15',
+    name: 'Residência em Cirurgia Geral',
+    description: 'R2 - Cirurgia Geral',
+    professorId: '3',
+    professorName: 'Dr. Oliveira',
+    schedule: 'Quarta-feira, 14:00',
+    day: 3,
+    time: '14:00',
+    color: '#DB4437'
+  },
+
+  // R2 - Quinta-feira
+  {
+    id: '16',
+    name: 'Residência em Ginecologia e Obstetrícia',
+    description: 'R2 - GO',
+    professorId: '4',
+    professorName: 'Dra. Costa',
+    schedule: 'Quinta-feira, 14:00',
+    day: 4,
+    time: '14:00',
+    color: '#F4B400'
+  },
+
+  // R2 - Sexta-feira
+  {
+    id: '17',
+    name: 'Residência em Psiquiatria',
+    description: 'R2 - Psiquiatria',
+    professorId: '5',
+    professorName: 'Dr. Lima',
+    schedule: 'Sexta-feira, 14:00',
+    day: 5,
+    time: '14:00',
+    color: '#673AB7'
+  }
+];
+
 export const initializeMockUsers = async (): Promise<User[]> => {
   try {
     console.log('Iniciando configuração dos usuários fixos...');
@@ -223,15 +435,14 @@ export async function saveClass(classData: Omit<Class, 'id' | 'createdAt' | 'upd
   }
 }
 
-export async function getClasses(): Promise<Class[]> {
+export const getClasses = async () => {
   try {
-    const classesJson = await AsyncStorage.getItem(CLASSES_KEY);
-    return classesJson ? JSON.parse(classesJson) : [];
+    return sampleClasses;
   } catch (error) {
     console.error('Erro ao buscar turmas:', error);
-    return [];
+    throw error;
   }
-}
+};
 
 export async function getClassById(id: string): Promise<Class | null> {
   try {
@@ -243,15 +454,14 @@ export async function getClassById(id: string): Promise<Class | null> {
   }
 }
 
-export async function getClassesByProfessor(professorId: string): Promise<Class[]> {
+export const getClassesByProfessor = async (professorId: string) => {
   try {
-    const classes = await getClasses();
-    return classes.filter(c => c.professorId === professorId);
+    return sampleClasses.filter(c => c.professorId === professorId);
   } catch (error) {
     console.error('Erro ao buscar turmas do professor:', error);
-    return [];
+    throw error;
   }
-}
+};
 
 export async function updateClass(id: string, classData: Partial<Class>): Promise<Class | null> {
   try {
@@ -499,4 +709,55 @@ export const deleteComment = async (id: string): Promise<boolean> => {
   const comments = await getItem<Comment>(config.storage.comments);
   const filteredComments = comments.filter(c => c.id !== id);
   return setItem(config.storage.comments, filteredComments);
+};
+
+// Função para obter o estado de autenticação
+export const getAuthState = async () => {
+  try {
+    const session = await AsyncStorage.getItem(STORAGE_KEYS.SESSION);
+    if (session) {
+      const userData = JSON.parse(session);
+      return {
+        user: {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.type
+        },
+        isAuthenticated: true
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao obter estado de autenticação:', error);
+    return null;
+  }
+};
+
+// Função para salvar o estado de autenticação
+export const saveAuthState = async (user: User) => {
+  try {
+    const sessionData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type
+    };
+    await AsyncStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionData));
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar estado de autenticação:', error);
+    return false;
+  }
+};
+
+// Função para limpar o estado de autenticação
+export const clearAuthState = async () => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.SESSION);
+    return true;
+  } catch (error) {
+    console.error('Erro ao limpar estado de autenticação:', error);
+    return false;
+  }
 }; 
