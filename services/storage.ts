@@ -466,8 +466,33 @@ const mockUsers: User[] = [
 
 // Inicializar usuários mockados
 export async function initializeMockUsers() {
-  const users = await getUsers();
-  if (users.length === 0) {
-    await AsyncStorage.setItem(config.storage.users, JSON.stringify(mockUsers));
+  try {
+    const users = await getUsers();
+    
+    // Se já existirem usuários, não inicializa
+    if (users.length > 0) return;
+
+    const mockUsers = [
+      {
+        name: 'Professor Teste',
+        email: 'professor@teste.com',
+        password: '123456',
+        type: 'professor' as const,
+      },
+      {
+        name: 'Aluno Teste',
+        email: 'aluno@teste.com',
+        password: '123456',
+        type: 'aluno' as const,
+      }
+    ];
+
+    for (const user of mockUsers) {
+      await saveUser(user);
+    }
+
+    console.log('Usuários de teste inicializados com sucesso');
+  } catch (error) {
+    console.error('Erro ao inicializar usuários de teste:', error);
   }
 } 

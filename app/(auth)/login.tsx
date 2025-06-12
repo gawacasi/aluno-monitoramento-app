@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { login } from '../../services/auth';
+import { getAuthState, login } from '../../services/auth';
+import { initializeMockUsers } from '../../services/storage';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -11,14 +11,18 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    clearStorage();
+    checkAuth();
+    initializeMockUsers();
   }, []);
 
-  const clearStorage = async () => {
+  const checkAuth = async () => {
     try {
-      await AsyncStorage.clear();
+      const user = await getAuthState();
+      if (user) {
+        router.replace('/(tabs)');
+      }
     } catch (error) {
-      console.error('Erro ao limpar storage:', error);
+      console.error('Erro ao verificar autenticação:', error);
     }
   };
 
